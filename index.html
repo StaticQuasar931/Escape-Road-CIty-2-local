@@ -262,10 +262,11 @@
             streamingAssetsUrl: "StreamingAssets",
             companyName: "staticquasar",
             productName: "Escape Road City 2",
-            productVersion: "25030706"
+            productVersion: "25030706",
+            // opt in to new auto sync for persistentDataPath
+            autoSyncPersistentDataPath: true
         };
 
-        // No external logging or remote APIs
         config.gameId = "escape-road-city-2-local";
         config.eventLog = false;
         config.enableMoreGame = "no";
@@ -346,7 +347,6 @@
                     window.focus();
                 }, 1000);
             }).catch(function (message) {
-                // If something blows up, at least log it
                 console.error("Unity error:", message);
                 progressText.textContent = "Error loading game";
             });
