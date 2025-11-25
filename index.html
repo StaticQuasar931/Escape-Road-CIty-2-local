@@ -126,7 +126,7 @@
             background: #000;
         }
 
-        /* Visual SEO - Static Menu and rotating widget */
+        /* Visual SEO */
 
         :root{
             --brand:#5ee1ff;
@@ -248,7 +248,53 @@
         }
     </style>
 
-    <!-- Local GMSoft SDK stub so Unity is happy and stays local -->
+    <!-- Block remote gmsoftsdk_v5.js from games.azgame.io so only your local stub is used -->
+    <script>
+        (function(){
+            var realCreateElement = document.createElement.bind(document);
+            document.createElement = function(tagName){
+                var el = realCreateElement(tagName);
+                if (String(tagName).toLowerCase() === "script") {
+                    var realSetAttribute = el.setAttribute.bind(el);
+                    el.setAttribute = function(name, value){
+                        if (name === "src" && typeof value === "string") {
+                            var lower = value.toLowerCase();
+                            if (lower.indexOf("gmsoftsdk_v5.js") !== -1 &&
+                                /^https?:\/\//.test(lower) &&
+                                lower.indexOf("staticquasar931.github.io") === -1) {
+                                console.log("Blocked remote gmsoftsdk script via setAttribute:", value);
+                                value = "";
+                            }
+                        }
+                        return realSetAttribute(name, value);
+                    };
+                    Object.defineProperty(el, "src", {
+                        get: function(){ return el.getAttribute("src") || ""; },
+                        set: function(value){ el.setAttribute("src", value); }
+                    });
+                }
+                return el;
+            };
+
+            var realAppendChild = Element.prototype.appendChild;
+            Element.prototype.appendChild = function(child){
+                try{
+                    if (child && child.tagName === "SCRIPT") {
+                        var src = child.getAttribute("src") || child.src || "";
+                        var lower = src.toLowerCase();
+                        if (lower.indexOf("gmsoftsdk_v5.js") !== -1 &&
+                            lower.indexOf("staticquasar931.github.io") === -1) {
+                            console.log("Blocked remote gmsoftsdk script via appendChild:", src);
+                            return child;
+                        }
+                    }
+                } catch(e){}
+                return realAppendChild.call(this, child);
+            };
+        })();
+    </script>
+
+    <!-- Local GMSoft stub (your file in this repo) -->
     <script src="gmsoftsdk_v5.js"></script>
 
     <script>
@@ -263,7 +309,6 @@
             companyName: "staticquasar",
             productName: "Escape Road City 2",
             productVersion: "25030706",
-            // opt in to new auto sync for persistentDataPath
             autoSyncPersistentDataPath: true
         };
 
@@ -284,7 +329,7 @@
         <span id="closeStaticMenu" title="Hide temporarily">✕</span>
     </div>
 
-    <!-- Rotating quick link widget (bottom right) - Google Form -> Discord -> Instagram -->
+    <!-- Rotating widget (bottom right) Google Form -> Discord -> Instagram -->
     <div id="staticSlideMenu" aria-live="polite">
         <a id="staticSlideLink" href="https://sites.google.com/view/staticquasar931/google-form"
            target="_blank" rel="noopener" aria-label="Open Google Form">
