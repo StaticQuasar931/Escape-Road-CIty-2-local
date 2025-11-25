@@ -9,7 +9,7 @@ window.firebaseLogEvent = function(name, params){
 };
 
 // Unity sometimes passes invalid event names
-const REAL_addEventListener = document.addEventListener.bind(document);
+var REAL_addEventListener = document.addEventListener.bind(document);
 document.addEventListener = function(type, fn, opts){
     if (typeof type !== "string") {
         console.warn("Ignored invalid Unity event:", type);
@@ -47,18 +47,19 @@ window.GmSoft.Event = function(){
 };
 
 // -------- Custom API host (Local) --------
-let list_api_host = [
+// Use var so if something else defines list_api_host there is no hard error
+var list_api_host = [
     "https://staticquasar931.github.io/Escape-Road-CIty-2-local/",
     "https://api.1games.io/"
 ];
-let api_host = list_api_host[0];
+var api_host = list_api_host[0];
 
 // -------- Debug Info --------
-window.GMDEBUG = {};
+window.GMDEBUG = window.GMDEBUG || {};
 window.GMDEBUG["LOADED SDK"] = Date.now();
 
 // -------- Minimal safe config --------
-window.GMSOFT_OPTIONS = {
+window.GMSOFT_OPTIONS = window.GMSOFT_OPTIONS || {
     enableAds: false,
     debug: false,
     pub_id: "",
@@ -79,7 +80,7 @@ window.GMSOFT_OPTIONS = {
     gdHost: false
 };
 
-let _gameId = window.GMSOFT_OPTIONS.gameId || "local";
+var _gameId = window.GMSOFT_OPTIONS.gameId || "local";
 
 // -------- Always local --------
 function isDiffHost() {
@@ -108,7 +109,7 @@ function httpGet(url) {
         game: {
             name: "Escape Road City 2",
             description: "Drive fast and escape the city.",
-            image: "cover.jpg",
+            image: "loading.png",
             redirect_url: "#"
         }
     });
@@ -116,23 +117,32 @@ function httpGet(url) {
 
 // -------- SDK Init Logic --------
 function sdkInit() {
-
-    let response = httpGet(api_host + "ajax/infov3?params=local");
-    let info = JSON.parse(response);
+    var response = httpGet(api_host + "ajax/infov3?params=local");
+    var info = {};
+    try {
+        info = JSON.parse(response);
+    } catch (e) {
+        console.error("Error parsing local GMSoft info", e);
+        info = { game: { name: "Escape Road City 2" } };
+    }
 
     window.GMDEBUG["LOADED_SDK_SUCCESS"] = Date.now();
     window.GMSOFT_MSG = response;
     window.GMDEBUG["site_info"] = info;
 
-    window.GMSOFT_OPTIONS.game = info.game;
+    window.GMSOFT_OPTIONS.game = info.game || window.GMSOFT_OPTIONS.game;
     window.GMSOFT_OPTIONS.allow_play = "yes";
     window.GMSOFT_OPTIONS.allow_host = "yes";
     window.GMSOFT_OPTIONS.allow_embed = "yes";
 
     console.log("Local GMSoft SDK ready");
 
-    // Notify Unity
-    document.dispatchEvent(new CustomEvent("gmsoftSdkReady"));
+    // Notify Unity that SDK is ready if it listens
+    try {
+        document.dispatchEvent(new CustomEvent("gmsoftSdkReady"));
+    } catch (e) {
+        console.warn("Could not dispatch gmsoftSdkReady event", e);
+    }
 }
 
 // Run init
