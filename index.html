@@ -1,93 +1,351 @@
 <!DOCTYPE html>
 <html lang="en-us">
 <head>
+
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <meta name="viewport" content="initial-scale=1, width=device-width" />
+    <meta name="robots" content="index, follow, max-image-preview:large" />
+    <meta name="theme-color" content="#000000" />
 
     <title>Escape Road City 2 – StaticQuasar931</title>
-    <meta name="description" content="Escape Road City 2 unblocked driving game on StaticQuasar931." />
-
+    <meta name="description" content="Escape Road City 2 unblocked driving game on StaticQuasar931. Drive fast, dodge traffic, and escape the city—fully playable at school or home." />
     <link rel="icon" type="image/png" href="https://cdn.jsdelivr.net/gh/StaticQuasar931/Images@main/icon.png" />
 
-    <!-- BLOCK ALL EXTERNAL GMSoft SDK LOADS -->
+    <!-- ======================================================================================
+         BLOCK EXTERNAL GMSoft SDK BEFORE UNITY LOADS
+         ====================================================================================== -->
     <script>
+        // Block external AzGames SDK injection
         window.GmSoftInclude = function(path){
             console.warn("Blocked external GMSoft SDK:", path);
         };
 
-        // Block Unity from loading external tracking API
-        window.fetch = new Proxy(window.fetch, {
-            apply(target, thisArg, args) {
-                if (typeof args[0] === "string" && args[0].includes("event.azgame.io")) {
-                    console.warn("Blocked AzGames analytics:", args[0]);
-                    return Promise.resolve(new Response("{}"));
-                }
-                return Reflect.apply(target, thisArg, args);
+        // Block ALL external event logging (ban-game, start-game)
+        const originalFetch = window.fetch;
+        window.fetch = function(url, opts){
+            if (typeof url === "string" && url.includes("event.azgame.io")) {
+                console.warn("Blocked AzGame event:", url);
+                return Promise.resolve(new Response("{}"));
             }
+            return originalFetch(url, opts);
+        };
+
+        // Block XMLHTTPRequest as well (Unity fails otherwise)
+        const OldXHR = XMLHttpRequest;
+        XMLHttpRequest = function(){
+            const xhr = new OldXHR();
+            const open = xhr.open;
+            xhr.open = function(method, url){
+                if (url.includes("event.azgame.io")) {
+                    console.warn("Blocked XHR event:", url);
+                    url = "data:application/json,{}";  
+                }
+                return open.apply(xhr, arguments);
+            };
+            return xhr;
+        };
+    </script>
+
+    <!-- ======================================================================================
+         LOAD LOCAL GMSoft SDK (THE SAFE VERSION)
+         ====================================================================================== -->
+    <script>
+        window.GMSOFT_OPTIONS = {
+            gameId: "escape-road-city-2",
+            allow_play: "yes",
+            allow_host: "yes",
+            allow_embed: "yes",
+            enableAds: false,
+            sdkType: "h5"
+        };
+
+        window.GmSoft = {
+            Init(data){ console.log("GmSoft.Init", data); return true; },
+            Ready(){ console.log("GmSoft.Ready"); return true; },
+            SetParam(p){ console.log("GmSoft.SetParam", p); return true; },
+            GetParam(k){ console.log("GmSoft.GetParam", k); return ""; },
+            Event(e, d){ console.log("GmSoft.Event BLOCKED", e, d); return true; }
+        };
+
+        window.httpGet = function(u){
+            console.warn("Blocked httpGet:", u);
+            return "{}";
+        };
+
+        document.addEventListener("DOMContentLoaded", () => {
+            console.log("Local GMSoft SDK ready");
+            document.dispatchEvent(new CustomEvent("gmsoftSdkReady"));
         });
     </script>
 
-    <!-- LOAD LOCAL SDK BEFORE UNITY -->
-    <script src="gmsoftsdk_v5.js"></script>
-
-    <!-- BASIC CSS -->
+    <!-- ======================================================================================
+         GAME CSS + VISUAL SEO
+         ====================================================================================== -->
     <style>
-        html,body{margin:0;height:100%;background:#000;}
-        #unity-container{width:100%;height:100%;display:none;}
-        #unity-canvas{width:100%;height:100%;background:#000;}
+        :root{
+            --brand:#5ee1ff;
+            --glow:0 0 12px rgba(94,225,255,.65), 0 0 32px rgba(155,255,183,.35);
+            --shadow:0 10px 30px rgba(0,0,0,.4);
+        }
+        html, body{
+            margin:0; height:100%; background:#000;
+            color:#eaf4ff;
+            font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+        }
+
+        /* Static Menu (top-left) */
+        #staticMenu{
+            position:fixed; left:12px; top:12px; z-index:9999;
+            display:flex; gap:10px; align-items:center; user-select:none;
+            padding:10px 14px; border-radius:12px;
+            background:linear-gradient(135deg, rgba(20,20,28,.9), rgba(20,20,28,.6));
+            border:1px solid rgba(94,225,255,.35);
+            color:#e8f3ff; box-shadow:var(--glow), var(--shadow);
+            font-size:14px; animation:menuEnter .6s ease .15s both;
+        }
+        #staticMenu a{ color:#5ee1ff; font-weight:800; text-decoration:none; }
+        #closeStaticMenu{
+            color:#f55; cursor:pointer; padding:2px 6px; border-radius:6px;
+            border:1px solid rgba(255,255,255,.15); background:rgba(255,255,255,.06);
+        }
+        @keyframes menuEnter{from{opacity:0; transform:translateY(-8px)} to{opacity:1; transform:translateY(0)}}
+
+        /* Rotating widget */
+        #staticSlideMenu{
+            position:fixed; bottom:24px; right:24px; z-index:9999;
+            width:100px; height:100px; pointer-events:none; opacity:0;
+            transform:translateX(140px) scale(.96);
+        }
+        #staticSlideMenu a{display:block;width:100%;height:100%}
+        #staticSlideMenu img{
+            width:100%; height:100%; object-fit:contain;
+            transition:opacity .25s ease;
+        }
+        .slide-in{ animation:slideIn 2s ease forwards; }
+        .slide-out{ animation:slideOut 2s ease forwards; }
+        @keyframes slideIn{from{opacity:0; transform:translateX(140px) scale(.96)} to{opacity:1; transform:translateX(0) scale(1)}}
+        @keyframes slideOut{from{opacity:1; transform:translateX(0) scale(1)} to{opacity:0; transform:translateX(140px) scale(.96)}}
+
+        /* Unity container */
+        #unity-container{
+            width:100%; height:100%; display:none;
+        }
+        #unity-canvas{
+            width:100%; height:100%; background:#000;
+        }
+
+        /* Loading screen */
+        #loadingBlock{
+            position:fixed; inset:0;
+            display:flex; flex-direction:column;
+            justify-content:center; align-items:center;
+            color:#fff; font-size:18px;
+            background:#000;
+        }
+        #progress_fill{
+            width:0%; height:8px; background:var(--brand);
+            margin-top:20px; transition:width .2s linear;
+            max-width:300px;
+        }
+
+        .seo-hidden{
+            position:absolute; width:1px; height:1px;
+            overflow:hidden; clip:rect(1px,1px,1px,1px);
+            white-space:nowrap;
+        }
     </style>
 
-    <!-- UNITY BUILD CONFIG -->
-    <script>
-        var buildUrl="Build";
-        var loaderUrl=buildUrl + "/escape-road-city-2-v25030706.loader.js";
-        var config={
-            dataUrl:buildUrl + "/escape-road-city-2-v25030706.data.unityweb",
-            frameworkUrl:buildUrl + "/escape-road-city-2-v25030706.framework.js.unityweb",
-            codeUrl:buildUrl + "/escape-road-city-2-v25030706.wasm.unityweb",
-            streamingAssetsUrl:"StreamingAssets",
-            companyName:"StaticQuasar931",
-            productName:"Escape Road City 2",
-            productVersion:"25030706",
-            gameId:"escape-road-city-2",
-            eventLog:false,          /* disabled so Unity won't try azgame.io */
-            buildAPI:"",             /* disable tracking */
-            enableMoreGame:"no",
-            enablePromotion:false
-        };
-    </script>
 </head>
-
 <body>
-    <!-- Unity Container -->
+
+    <!-- ======================================================================================
+         STATIC MENU (top-left)
+         ====================================================================================== -->
+    <div id="staticMenu">
+        <a href="https://sites.google.com/view/staticquasar931/gm3z" target="_blank">
+            More Unblocked Games by Static
+        </a>
+        <span id="closeStaticMenu">✕</span>
+    </div>
+
+    <!-- ======================================================================================
+         ROTATING SLIDE MENU (bottom-right)
+         ====================================================================================== -->
+    <div id="staticSlideMenu">
+        <a id="staticSlideLink" href="https://sites.google.com/view/staticquasar931/google-form" target="_blank">
+            <img id="staticSlideImg"
+                 src="https://cdn.jsdelivr.net/gh/StaticQuasar931/Images@main/GoogleForm.png"
+                 alt="Google Form" />
+        </a>
+    </div>
+
+    <!-- ======================================================================================
+         UNITY CONTAINER
+         ====================================================================================== -->
     <div id="unity-container">
         <canvas id="unity-canvas"></canvas>
     </div>
 
-    <!-- Loading Screen -->
-    <div id="loadingBlock" style="color:white;text-align:center;padding-top:40px;">
-        Loading Escape Road City 2...
-        <div id="progress_fill" style="width:0;height:8px;background:#5ee1ff;margin:20px auto 0;max-width:300px;"></div>
+    <!-- ======================================================================================
+         LOADING SCREEN
+         ====================================================================================== -->
+    <div id="loadingBlock">
+        <img src="loading.png" alt="loading" style="width:200px; opacity:.9;">
+        <div id="progress_fill"></div>
+        <div style="margin-top:12px;">Loading Escape Road City 2...</div>
     </div>
 
-    <!-- UNITY LOADER -->
+    <!-- ======================================================================================
+         UNITY BUILD CONFIG
+         ====================================================================================== -->
     <script>
-        var canvas=document.getElementById("unity-canvas");
-        var progress=document.getElementById("progress_fill");
-        var load=document.getElementById("loadingBlock");
-        var container=document.getElementById("unity-container");
+        var buildUrl = "Build";
+        var loaderUrl = buildUrl + "/escape-road-city-2-v25030706.loader.js";
+        var config = {
+            dataUrl: buildUrl + "/escape-road-city-2-v25030706.data.unityweb",
+            frameworkUrl: buildUrl + "/escape-road-city-2-v25030706.framework.js.unityweb",
+            codeUrl: buildUrl + "/escape-road-city-2-v25030706.wasm.unityweb",
+            streamingAssetsUrl: "StreamingAssets",
+            companyName: "StaticQuasar931",
+            productName: "Escape Road City 2",
+            productVersion: "25030706",
+            gameId: "escape-road-city-2",
+            eventLog: false,
+            buildAPI: "",
+            enableMoreGame: "no",
+            enablePromotion: false,
+            autoSyncPersistentDataPath: true
+        };
+    </script>
 
-        var s=document.createElement("script");
-        s.src=loaderUrl;
-        s.onload=()=>{
-            createUnityInstance(canvas,config,(p)=>{
-                progress.style.width=(p*100)+"%";
-            }).then((unity)=>{
-                window.unityInstance=unity;
-                setTimeout(()=>{ load.style.display="none"; container.style.display="block"; },800);
-            }).catch(alert);
+    <!-- ======================================================================================
+         UNITY LOADER
+         ====================================================================================== -->
+    <script>
+        const canvas = document.getElementById("unity-canvas");
+        const progress = document.getElementById("progress_fill");
+        const loading = document.getElementById("loadingBlock");
+        const game = document.getElementById("unity-container");
+
+        const s = document.createElement("script");
+        s.src = loaderUrl;
+        s.onload = () => {
+            createUnityInstance(canvas, config, p => {
+                progress.style.width = (p * 100) + "%";
+            }).then(instance => {
+                window.unityInstance = instance;
+                setTimeout(() => {
+                    loading.style.display = "none";
+                    game.style.display = "block";
+                }, 800);
+            }).catch(err => alert(err));
         };
         document.body.appendChild(s);
     </script>
+
+    <!-- ======================================================================================
+         VISUAL SEO LOGIC (menu hide, rotator, y+u+i toggle, leave warning)
+         ====================================================================================== -->
+    <script>
+        window.onbeforeunload = () => "Are you sure you want to leave?";
+
+        // Static Menu hide 3 minutes
+        (function(){
+            const menu=document.getElementById("staticMenu");
+            const btn=document.getElementById("closeStaticMenu");
+            const KEY="sq931_staticMenu_hidden_until";
+            const show=()=>menu.style.display="flex";
+            const hide=()=>{
+                menu.style.display="none";
+                const until=Date.now()+180000;
+                localStorage.setItem(KEY,until);
+                setTimeout(show,180000);
+            };
+            const until=parseInt(localStorage.getItem(KEY)||"0",10);
+            if(until>Date.now()){menu.style.display="none"; setTimeout(show,until-Date.now());}
+            if(btn) btn.onclick=hide;
+        })();
+
+        // Rotator GoogleForm → Discord → Instagram
+        (function(){
+            const wrap=document.getElementById("staticSlideMenu");
+            const a=document.getElementById("staticSlideLink");
+            const img=document.getElementById("staticSlideImg");
+
+            const R=[
+                {
+                    link:"https://sites.google.com/view/staticquasar931/google-form",
+                    src:"https://cdn.jsdelivr.net/gh/StaticQuasar931/Images@main/GoogleForm.png",
+                    alt:"Google Form"
+                },
+                {
+                    link:"https://discord.gg/DP2hM7RRhR",
+                    src:"https://cdn.jsdelivr.net/gh/StaticQuasar931/Images@main/Join_Our_DC_StaticQuassar931_lcplrf.png",
+                    alt:"Discord"
+                },
+                {
+                    link:"https://www.instagram.com/freeschoolgamepage/",
+                    src:"https://cdn.jsdelivr.net/gh/StaticQuasar931/Images@main/Follow-us--IG",
+                    alt:"Instagram"
+                }
+            ];
+
+            // Preload
+            R.forEach(o=>{new Image().src=o.src;});
+
+            async function delay(ms){return new Promise(r=>setTimeout(r,ms));}
+            let i=0;
+
+            async function cycle(){
+                for(;;){
+                    let o=R[i];
+                    a.href=o.link;
+                    img.style.opacity="0";
+                    setTimeout(()=>{img.src=o.src; img.alt=o.alt;},50);
+
+                    wrap.classList.remove("slide-out");
+                    wrap.classList.add("slide-in");
+                    wrap.style.pointerEvents="auto";
+
+                    await delay(7000);
+
+                    wrap.classList.remove("slide-in");
+                    wrap.classList.add("slide-out");
+                    wrap.style.pointerEvents="none";
+
+                    await delay(3000);
+
+                    i=(i+1)%R.length;
+
+                    await delay(15000);
+                }
+            }
+            cycle();
+        })();
+
+        // y + u + i toggle visibility
+        (function(){
+            const ids=["staticMenu","staticSlideMenu"];
+            let seq=[];
+            window.addEventListener("keydown",e=>{
+                seq.push(e.key.toLowerCase());
+                if(seq.length>3) seq.shift();
+                if(seq.join("")==="yui"){
+                    ids.forEach(id=>{
+                        const el=document.getElementById(id);
+                        if(!el)return;
+                        el.style.display=(el.style.display==="none")?"block":"none";
+                    });
+                }
+            });
+        })();
+    </script>
+
+    <!-- Hidden SEO -->
+    <div class="seo-hidden">
+        <h1>Escape Road City 2 unblocked – StaticQuasar931</h1>
+        <p>Escape Road City 2 is a fast-paced WebGL escape driving game hosted by StaticQuasar931.</p>
+    </div>
+
 </body>
 </html>
