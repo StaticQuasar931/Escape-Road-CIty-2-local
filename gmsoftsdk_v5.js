@@ -1,3 +1,20 @@
+// --- Essential Unity Fixes ---
+
+// Unity expects this function to exist
+window.firebaseLogEvent = function(name, params){
+    console.log("firebaseLogEvent (stub):", name, params);
+};
+
+// Some Unity builds dynamically compute event names.
+// This patches missing document["something"] listeners.
+const REAL_addEventListener = document.addEventListener.bind(document);
+document.addEventListener = function(type, fn, opts){
+    if (typeof type !== "string") {
+        console.warn("Unity requested invalid event listener:", type);
+        return;
+    }
+    return REAL_addEventListener(type, fn, opts);
+};
 
 let list_api_host = [
     "https://staticquasar931.github.io/Escape-Road-CIty-2-local/",
