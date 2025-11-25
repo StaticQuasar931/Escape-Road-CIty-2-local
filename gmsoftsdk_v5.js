@@ -3,12 +3,45 @@
    For Escape-Road-CIty-2-local
    ================================ */
 
-// -------- Unity required stubs --------
+// Unity uses firebaseLogEvent hooks
 window.firebaseLogEvent = function(name, params){
     console.log("firebaseLogEvent", name, params);
 };
 
-// Unity sometimes passes invalid event names
+// Patch document.getElementById so Unity cannot crash when an element is missing
+(function(){
+    var REAL_getElementById = document.getElementById.bind(document);
+    var dummyMap = {};
+
+    document.getElementById = function(id){
+        var el = REAL_getElementById(id);
+        if (el) return el;
+
+        if (!id) return null;
+
+        if (dummyMap[id]) return dummyMap[id];
+
+        var dummy = document.createElement("div");
+        dummy.id = id;
+        dummy.style.display = "none";
+        dummyMap[id] = dummy;
+
+        if (document.body) {
+            document.body.appendChild(dummy);
+        } else {
+            // if body not ready yet, queue it
+            document.addEventListener("DOMContentLoaded", function(){
+                if (!dummy.isConnected && document.body) {
+                    document.body.appendChild(dummy);
+                }
+            });
+        }
+
+        return dummy;
+    };
+})();
+
+// Unity sometimes passes invalid event names into document.addEventListener
 var REAL_addEventListener = document.addEventListener.bind(document);
 document.addEventListener = function(type, fn, opts){
     if (typeof type !== "string") {
@@ -18,7 +51,7 @@ document.addEventListener = function(type, fn, opts){
     return REAL_addEventListener(type, fn, opts);
 };
 
-// -------- Unity expects GMSoft object --------
+// GmSoft object expected by game
 window.GmSoft = window.GmSoft || {};
 
 window.GmSoft.Init = function(){
@@ -46,19 +79,17 @@ window.GmSoft.Event = function(){
     return true;
 };
 
-// -------- Custom API host (Local) --------
-// Use var so if something else defines list_api_host there is no hard error
+// Custom API host (local first, but we always bypass actual network)
 var list_api_host = [
     "https://staticquasar931.github.io/Escape-Road-CIty-2-local/",
     "https://api.1games.io/"
 ];
 var api_host = list_api_host[0];
 
-// -------- Debug Info --------
 window.GMDEBUG = window.GMDEBUG || {};
 window.GMDEBUG["LOADED SDK"] = Date.now();
 
-// -------- Minimal safe config --------
+// Minimal safe config
 window.GMSOFT_OPTIONS = window.GMSOFT_OPTIONS || {
     enableAds: false,
     debug: false,
@@ -82,7 +113,6 @@ window.GMSOFT_OPTIONS = window.GMSOFT_OPTIONS || {
 
 var _gameId = window.GMSOFT_OPTIONS.gameId || "local";
 
-// -------- Always local --------
 function isDiffHost() {
     return false;
 }
@@ -90,7 +120,7 @@ function isHostOnGDSDK() {
     return false;
 }
 
-// -------- Fake API response so Unity never breaks --------
+// Fake API response so Unity never breaks
 function httpGet(url) {
     console.log("httpGet bypassed:", url);
 
@@ -115,7 +145,7 @@ function httpGet(url) {
     });
 }
 
-// -------- SDK Init Logic --------
+// SDK Init Logic
 function sdkInit() {
     var response = httpGet(api_host + "ajax/infov3?params=local");
     var info = {};
@@ -137,7 +167,6 @@ function sdkInit() {
 
     console.log("Local GMSoft SDK ready");
 
-    // Notify Unity that SDK is ready if it listens
     try {
         document.dispatchEvent(new CustomEvent("gmsoftSdkReady"));
     } catch (e) {
@@ -145,8 +174,7 @@ function sdkInit() {
     }
 }
 
-// Run init
 sdkInit();
 
-// Unity compatibility (unused but required)
+// Unity compatibility
 var unityhostname = "local";
